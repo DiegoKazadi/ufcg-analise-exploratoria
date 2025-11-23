@@ -98,59 +98,24 @@ if (nrow(check_inconsistencias) > 0) {
   cat("✅ Nenhuma inconsistência encontrada.\n")
 }
 
-# =====================================================
-# 6. Padronização e análise da variável SEXO
-# =====================================================
-
-alunos_final <- alunos_final %>%
+# Filtrar apenas egressos (graduados)
+egressos <- df %>%
+  filter(status == "Inativo",
+         tipo_evasao == "Graduado") %>%
   mutate(
-    sexo = case_when(
-      sexo %in% c("MASCULINO", "M") ~ "M",
-      sexo %in% c("FEMININO", "F") ~ "F",
-      TRUE ~ NA_character_
-    )
+    data_nascimento = as.Date(data_nascimento),
+    data_conclusao = as.Date(data_conclusao),
+    
+    # Cálculo da idade de conclusão
+    idade_conclusao = as.numeric(difftime(data_conclusao, data_nascimento, units = "days")) / 365.25
   )
 
-dist_sexo <- alunos_final %>%
-  count(sexo, name = "quantidade") %>%
-  mutate(
-    porcentagem = quantidade / sum(quantidade) * 100,
-    label = paste0(quantidade, " (", sprintf("%.1f%%", porcentagem), ")")
-  )
-
-print("Distribuição por sexo:")
-print(dist_sexo)
-
-# =====================================================
-# 7. Gráfico: Distribuição por Sexo (Título sem negrito)
-# =====================================================
-
-grafico_sexo <- ggplot(dist_sexo, aes(x = sexo, y = quantidade, fill = sexo)) +
-  geom_bar(stat = "identity", width = 0.6, color = "black") +
-  geom_text(
-    aes(label = label),
-    vjust = -0.3,
-    size = 5,
-    fontface = "plain"
-  ) +
-  scale_fill_manual(
-    values = c(
-      "F" = "#C46200",   # laranja escuro
-      "M" = "#0A2A66"    # azul escuro
-    ),
-    labels = c("F" = "Feminino", "M" = "Masculino")
-  ) +
+# Gráfico
+ggplot(egressos, aes(x = idade_conclusao)) +
+  geom_histogram(color = "black", fill = "#1F77B4", bins = 20) +
   labs(
-    title = "Distribuição dos Estudantes por Sexo (2011-2023)",
-    x = "Sexo",
-    y = "Quantidade de Estudantes",
-    fill = "Sexo"
+    title = "Distribuição da Idade de Conclusão dos Egressos",
+    x = "Idade na Conclusão (anos)",
+    y = "Frequência"
   ) +
-  theme_minimal(base_size = 13) +
-  theme(
-    plot.title = element_text(face = "plain", hjust = 0.5),  # TÍTULO SEM NEGRITO
-    legend.position = "right"
-  ) +
-  coord_cartesian(clip = "off")
-
-print(grafico_sexo)
+  theme_minimal(base_size = 14)
