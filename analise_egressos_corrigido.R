@@ -27,11 +27,9 @@ carregar_tabelas <- function(pasta) {
   for (arq in arquivos) {
     nome <- tools::file_path_sans_ext(basename(arq))
     
-    # CORREÇÃO: Usar read_csv2 em vez de read_delim com delimitador fixo,
-    # que é mais robusto para arquivos CSV com ponto e vírgula como separador.
-    # Isso ajuda a inferir corretamente os tipos de coluna.
-    df <- read_csv2(
+    df <- read_delim(
       arq,
+      delim = ";",
       show_col_types = FALSE,
       locale = locale(decimal_mark = ".", grouping_mark = ",")
     )
@@ -41,7 +39,7 @@ carregar_tabelas <- function(pasta) {
     cat("\n=============================\n")
     cat("Tabela:", nome, "\n")
     cat("Dimensões:", dim(df)[1], "linhas x", dim(df)[2], "colunas\n")
-    cat("Colunas:\n")
+    cat("Colunas (originais):\n")
     print(colnames(df))
     cat("Visualização inicial:\n")
     print(head(df, 5))
@@ -58,138 +56,139 @@ carregar_tabelas <- function(pasta) {
 }
 
 # =====================================================
-# 3. Carregamento dos dados
+# 3. Carregamento e Padronização dos Dados
 # =====================================================
 
 pasta_dados <- "C:/Users/Big Data/Documents/Master UFCG/Semestre 2025.2/Tabelas"
-# ATENÇÃO: O código a seguir não pode ser executado no meu ambiente, pois o caminho
-# de arquivo é específico do seu sistema operacional (Windows).
-# A execução real deve ser feita no seu ambiente.
-# tabelas <- carregar_tabelas(pasta_dados)
+tabelas <- carregar_tabelas(pasta_dados)
 
-# print("Tabelas carregadas:")
-# print(names(tabelas))
+cat("Tabelas carregadas:\n")
+print(names(tabelas))
 
-# Selecionar a tabela principal
-# alunos_final <- tabelas[["alunos-final"]]
+# Carregar e padronizar nomes da tabela principal
+alunos_final <- tabelas[["alunos-final"]] %>%
+  clean_names()  # Converte "Tipo de Evasao" → "tipo_de_evasao", etc.
 
-# Para fins de demonstração e correção, vou criar um dataframe simulado
-# com os nomes de colunas esperados e tipos de dados corretos.
-# Você deve substituir esta seção pelo carregamento real dos seus dados.
-alunos_final <- tibble(
-  matricula = 1:10,
-  periodo_de_ingresso = c(2018.1, 2018.2, 2019.1, 2019.2, 2020.1, 2020.2, 2021.1, 2021.2, 2022.1, 2022.2),
-  periodo_de_evasao = c(2022.1, 2023.1, 2023.2, 2024.1, 2024.2, 2025.1, 2025.2, 2026.1, 2026.2, 2027.1),
-  idade_aproximada_no_ingresso = c(18, 19, 20, 21, 22, 23, 24, 25, 26, 27),
-  status = c("Inativo", "Inativo", "Ativo", "Inativo", "Ativo", "Inativo", "Inativo", "Ativo", "Inativo", "Inativo"),
-  tipo_de_evasao = c("Graduado", "Desistente", "Graduado", "Graduado", "Desistente", "Graduado", "Graduado", "Graduado", "Graduado", "Graduado"),
-  curriculo = c(2017, 2017, 2017, 2017, 1999, 1999, 1999, 1999, 1999, 1999)
-)
+cat("\nNomes das colunas após padronização (snake_case):\n")
+print(colnames(alunos_final))
 
 # =====================================================
-# 4. Tratamento de variáveis
-# =====================================================
-
-alunos_final <- alunos_final %>% janitor::clean_names()
-
-alunos_final <- alunos_final %>%
-  mutate(
-    # CORREÇÃO 2: Garante que a coluna seja numérica antes de floor,
-    # caso o read_csv2 não tenha inferido corretamente.
-    periodo_de_ingresso = as.numeric(periodo_de_ingresso), 
-    ano_ingresso = floor(periodo_de_ingresso),
-    semestre_ingresso = ifelse(periodo_de_ingresso %% 1 == 0.1, 1, 2)
-  )
-
-# =====================================================
-# 5. Verificação de inconsistências curriculares
-# =====================================================
-
-check_inconsistencias <- alunos_final %>%
-  filter(
-    (ano_ingresso < 2018 & curriculo == 2017) |
-      (ano_ingresso >= 2018 & curriculo == 1999)
-  ) %>%
-  distinct(matricula, ano_ingresso, curriculo)
-
-if (nrow(check_inconsistencias) > 0) {
-  cat("⚠️ Inconsistências encontradas:\n")
-  print(check_inconsistencias)
-} else {
-  cat("✅ Nenhuma inconsistência encontrada.\n")
-}
-
-# =====================================================
-# 6. Filtrar egressos e calcular idade na conclusão
+# 4. Filtrar Egressos (Graduados)
 # =====================================================
 
 egressos <- alunos_final %>%
-  filter(
-    # CORREÇÃO 3: O janitor::clean_names() converte nomes de colunas e valores
-    # de texto em minúsculas. O valor "Inativo" deve ser "inativo" após o clean_names.
-    status == "inativo", 
-    tipo_de_evasao == "graduado" # CORREÇÃO 4: O janitor::clean_names() também afeta os valores.
+  filter(status == "INATIVO", 
+         tipo_de_evasao == "GRADUADO") %>%
+  select(cpf, matricula, idade_aproximada_no_ingresso)
+
+cat("Total de egressos graduados identificados:", nrow(egressos), "\n")
+
+# =====================================================
+# 5. Distribuição por Idade no Ingresso
+# =====================================================
+
+distribuicao_idade <- egressos %>%
+  group_by(idade_aproximada_no_ingresso) %>%
+  summarise(
+    quantidade_egressos = n(),
+    percentual = round((n() / nrow(egressos)) * 100, 2),
+    .groups = "drop"
   ) %>%
-  mutate(
-    # CORREÇÃO 5: Garante que a coluna seja numérica antes de floor.
-    periodo_de_evasao = as.numeric(periodo_de_evasao), 
-    ano_conclusao = floor(periodo_de_evasao),
-    idade_conclusao = idade_aproximada_no_ingresso + (ano_conclusao - ano_ingresso)
+  arrange(idade_aproximada_no_ingresso) %>%
+  rename(idade = idade_aproximada_no_ingresso)
+
+# =====================================================
+# 6. Exibir Tabela Resumida
+# =====================================================
+
+cat("\nDistribuição de Idade dos Estudantes Egressos:\n")
+cat("==============================================\n")
+print(distribuicao_idade)
+
+# =====================================================
+# 7. Estatísticas Descritivas
+# =====================================================
+
+cat("\n\nESTATÍSTICAS DESCRITIVAS:\n")
+cat("========================\n")
+cat("Total de Egressos:", nrow(egressos), "\n")
+cat("Idade Mínima:", min(egressos$idade_aproximada_no_ingresso, na.rm = TRUE), "\n")
+cat("Idade Máxima:", max(egressos$idade_aproximada_no_ingresso, na.rm = TRUE), "\n")
+cat("Idade Média:", round(mean(egressos$idade_aproximada_no_ingresso, na.rm = TRUE), 2), "\n")
+cat("Idade Mediana:", median(egressos$idade_aproximada_no_ingresso, na.rm = TRUE), "\n")
+
+# Idade com maior frequência (pico)
+pico_idade <- distribuicao_idade %>%
+  filter(quantidade_egressos == max(quantidade_egressos)) %>%
+  pull(idade)
+
+cat("Idade com Maior Frequência:", pico_idade, "\n")
+cat("Quantidade no Pico:", 
+    distribuicao_idade %>% filter(idade == pico_idade) %>% pull(quantidade_egressos), "\n")
+
+# =====================================================
+# 8. Gráfico de Barras (simplificado e sem negrito)
+# =====================================================
+
+grafico <- ggplot(distribuicao_idade, aes(x = factor(idade), y = quantidade_egressos)) +
+  geom_bar(stat = "identity", fill = "#2E86AB", color = "#1A4D7A", alpha = 0.8) +
+  geom_text(
+    aes(label = quantidade_egressos),  # ← APENAS o número de egressos
+    vjust = -0.5, 
+    size = 3.5, 
+    color = "black"
+  ) +
+  labs(
+    title = "Distribuição de Idade dos Estudantes Egressos",
+    x = "Idade Aproximada no Ingresso",
+    y = "Quantidade de Egressos"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, hjust = 0.5),          # ← sem bold
+    axis.title = element_text(size = 11),                      # ← sem bold
+    axis.text = element_text(size = 10),
+    panel.grid.major.y = element_line(color = "#EEEEEE"),
+    panel.grid.major.x = element_blank(),
+    legend.position = "none"
+  ) +
+  coord_cartesian(clip = "off")
+
+print(grafico)
+
+# =====================================================
+# 9. Salvar Gráfico
+# =====================================================
+
+ggsave("distribuicao_idade_egressos.png", 
+       plot = grafico, 
+       width = 12, 
+       height = 7, 
+       dpi = 300, 
+       units = "in")
+
+cat("\n✓ Gráfico salvo como 'distribuicao_idade_egressos.png'\n")
+
+# =====================================================
+# 10. Análise Complementar – Faixa Etária Esperada
+# =====================================================
+
+cat("\n\nANÁLISE DE FAIXA ESPERADA:\n")
+cat("==========================\n")
+cat("Ingressantes típicos: 17-20 anos\n")
+cat("Duração nominal do curso: 4,5 anos\n")
+cat("Faixa esperada de conclusão: 21-24 anos\n")
+
+egressos_faixa_esperada <- egressos %>%
+  mutate(faixa = case_when(
+    idade_aproximada_no_ingresso >= 17 & idade_aproximada_no_ingresso <= 20 ~ "17-20 (Esperado)",
+    TRUE ~ "Fora da Faixa"
+  )) %>%
+  group_by(faixa) %>%
+  summarise(
+    quantidade = n(), 
+    percentual = round((n() / nrow(egressos)) * 100, 2),
+    .groups = "drop"
   )
 
-# Agora SIM podemos filtrar NAs
-# O erro 'idade_conclusao' não encontrado ocorreu porque o pipe anterior falhou.
-# Com as correções de tipo de dado, este filtro deve funcionar.
-egressos <- egressos %>% filter(!is.na(idade_conclusao))
-
-# =====================================================
-# 7. Gráfico 1 — Histograma com média e mediana
-# =====================================================
-
-# O erro 'non-numeric argument to mathematical function' nas funções de média/mediana
-# e 'idade_conclusao' não encontrado no filtro foram resolvidos pela correção do tipo de dado.
-
-media_idade <- mean(egressos$idade_conclusao, na.rm = TRUE)
-mediana_idade <- median(egressos$idade_conclusao, na.rm = TRUE)
-
-ggplot(egressos, aes(x = idade_conclusao)) +
-  geom_histogram(fill = "#1F77B4", color = "black", bins = 20) +
-  geom_vline(aes(xintercept = media_idade),
-             color = "red", linetype = "dashed", linewidth = 1) +
-  geom_vline(aes(xintercept = mediana_idade),
-             color = "darkgreen", linetype = "dotted", linewidth = 1) +
-  annotate("text", x = media_idade, y = Inf, label = paste0("Média: ", round(media_idade, 1)),
-           vjust = -0.5, color = "red") +
-  annotate("text", x = mediana_idade, y = Inf, label = paste0("Mediana: ", round(mediana_idade, 1)),
-           vjust = -1.5, color = "darkgreen") +
-  labs(
-    title = "Distribuição da Idade de Conclusão dos Egressos",
-    x = "Idade na Conclusão (anos)",
-    y = "Frequência"
-  ) +
-  theme_minimal(base_size = 14)
-
-# =====================================================
-# 8. Gráfico 2 — Faixas etárias
-# =====================================================
-
-# O erro 'objeto 'faixa_etaria' não encontrado' foi resolvido pela correção do tipo de dado.
-
-egressos <- egressos %>%
-  mutate(
-    faixa_etaria = cut(
-      idade_conclusao,
-      breaks = c(0, 20, 25, 30, 35, 40, Inf),
-      labels = c("<=20", "21–25", "26–30", "31–35", "36–40", "40+"),
-      right = FALSE
-    )
-  )
-
-ggplot(egressos, aes(x = faixa_etaria)) +
-  geom_bar(fill = "#FF7F0E", color = "black") +
-  labs(
-    title = "Faixas Etárias de Conclusão dos Egressos",
-    x = "Faixa Etária",
-    y = "Quantidade"
-  ) +
-  theme_minimal(base_size = 14)
+print(egressos_faixa_esperada)
