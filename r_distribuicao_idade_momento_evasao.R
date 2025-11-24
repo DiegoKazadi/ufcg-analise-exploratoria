@@ -30,17 +30,18 @@ tabelas <- carregar_tabelas(pasta_dados)
 alunos_final <- tabelas[["alunos-final"]] %>% clean_names()
 
 # =====================================================
-# Filtragem — apenas evadidos (não graduados)
+# Filtrar apenas evadidos
 # =====================================================
 evadidos <- alunos_final %>%
   filter(status == "INATIVO") %>% 
   filter(tipo_de_evasao != "GRADUADO") %>%
   filter(curriculo %in% c("1999", "2017")) %>%
-  filter(!is.na(periodo_de_ingresso),
+  filter(!is.na(idade_aproximada_no_ingresso),
+         !is.na(periodo_de_ingresso),
          !is.na(periodo_de_evasao))
 
 # =====================================================
-# Converter períodos para formato numérico
+# Converter períodos para numérico
 # =====================================================
 converter_periodo <- function(x) {
   ano <- as.numeric(substr(x, 1, 4))
@@ -52,66 +53,47 @@ evadidos <- evadidos %>%
   mutate(
     ingresso_num = converter_periodo(periodo_de_ingresso),
     deslig_num   = converter_periodo(periodo_de_evasao),
-    tempo_ate_evasao = deslig_num - ingresso_num
+    tempo_ate_evasao = deslig_num - ingresso_num,
+    idade_evasao = idade_aproximada_no_ingresso + tempo_ate_evasao
   )
 
 # =====================================================
-# Tempo médio até evasão por currículo
+# Média da idade no momento da evasão
 # =====================================================
-tme_curriculos <- evadidos %>%
+idade_media <- evadidos %>%
   group_by(curriculo) %>%
   summarise(
-    tempo_medio = round(mean(tempo_ate_evasao), 2),
-    total_evadidos = n(),
+    idade_media_evasao = round(mean(idade_evasao), 2),
     .groups = "drop"
   ) %>%
   mutate(curriculo = factor(curriculo,
-                            levels = c("1999", "2017"),
-                            labels = c("Currículo 1999", "Currículo 2017")))
+                            levels = c("1999","2017"),
+                            labels = c("Currículo 1999","Currículo 2017")))
 
 # =====================================================
-# Gráfico com cores claras e rótulos ajustados
+# Gráfico
 # =====================================================
+cores_idade <- c("Currículo 1999" = "#6AA3C8",
+                 "Currículo 2017" = "#E2A46F")
 
-cores_tme <- c(
-  "Currículo 1999" =  "#3A8BB7",   # azul claro
-  "Currículo 2017" =  "#D98C4D"    # laranja claro
-)
-g_tme <- ggplot(tme_curriculos,
-                aes(x = curriculo,
-                    y = tempo_medio,
-                    fill = curriculo)) +
+g_idade <- ggplot(idade_media,
+                  aes(x = curriculo,
+                      y = idade_media_evasao,
+                      fill = curriculo)) +
   geom_col(width = 0.6, alpha = 0.95) +
-  
-  # texto sem negrito acima da barra + palavra períodos
-  geom_text(aes(label = paste0(tempo_medio, " períodos")),
+  geom_text(aes(label = paste0(idade_media_evasao, " anos")),
             vjust = -0.4,
             size = 4) +
-  
-  scale_fill_manual(values = cores_tme) +
-  
+  scale_fill_manual(values = cores_idade) +
   labs(
-    title = "Tempo Médio até Evasão por Currículo",
+    title = "Idade Média no Momento da Evasão por Currículo",
     x = "Currículo",
-    y = "Tempo Médio (em períodos)",
+    y = "Idade Média (anos)",
     fill = "Currículo"
   ) +
-  
-  theme_minimal(base_size = 13) +
-  theme(
-    legend.title = element_text(face = "plain"),
-    legend.text  = element_text(face = "plain"),
-    text = element_text(face = "plain")
-  )
+  theme_minimal(base_size = 13)
 
-print(g_tme)
+print(g_idade)
 
-ggsave("tempo_medio_evasao_curriculos.png",
-       g_tme, width = 10, height = 6, dpi = 300)
-
-# =====================================================
-# Exportar tabela
-# =====================================================
-write.csv(tme_curriculos,
-          "tme_comparativo_curriculos.csv",
-          row.names = FALSE)
+ggsave("idade_media_evasao_curriculos.png",
+       g_idade, width = 10, height = 6, dpi = 300)
