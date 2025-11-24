@@ -9,100 +9,73 @@ library(janitor)
 library(ggplot2)
 
 # =====================================================
-# 2. Função para carregar e visualizar tabelas CSV
+# 2. Carregar tabelas
 # =====================================================
+
+pasta_dados <- "C:/Users/Big Data/Documents/Master UFCG/Semestre 2025.2/Tabelas"
 
 carregar_tabelas <- function(pasta) {
   arquivos <- list.files(path = pasta, pattern = "\\.csv$", full.names = TRUE)
-  
   if (length(arquivos) == 0) stop("Nenhum arquivo CSV encontrado.")
   
-  cat("Arquivos encontrados:\n")
-  print(basename(arquivos))
-  
   tabelas <- list()
-  
   for (arq in arquivos) {
     nome <- tools::file_path_sans_ext(basename(arq))
-    
     df <- read_delim(
       arq, delim = ";", show_col_types = FALSE,
       locale = locale(decimal_mark = ".", grouping_mark = ",")
     )
-    
     tabelas[[nome]] <- df
-    
-    cat("\n=============================\n")
-    cat("Tabela:", nome, "\n")
-    cat("Dimensões:", nrow(df), "x", ncol(df), "\n")
-    print(colnames(df))
-    print(head(df, 5))
   }
-  
   return(tabelas)
 }
-
-# =====================================================
-# 3. Carregar e Padronizar
-# =====================================================
-
-pasta_dados <- "C:/Users/Big Data/Documents/Master UFCG/Semestre 2025.2/Tabelas"
 
 tabelas <- carregar_tabelas(pasta_dados)
 
 alunos_final <- tabelas[["alunos-final"]] %>% clean_names()
 
-print(colnames(alunos_final))
-
 # =====================================================
-# 4. Função auxiliar para gerar análise por idade
+# 3. Função — distribuição por tipo de evasão
 # =====================================================
 
-analise_idade <- function(df, titulo_status) {
+analise_tipo_evasao <- function(df) {
   
   distribuicao <- df %>%
-    group_by(idade_aproximada_no_ingresso) %>%
+    group_by(tipo_de_evasao) %>%
     summarise(
       quantidade = n(),
       percentual = round((n() / nrow(df)) * 100, 2),
       .groups = "drop"
     ) %>%
-    arrange(idade_aproximada_no_ingresso) %>%
-    rename(idade = idade_aproximada_no_ingresso)
+    arrange(desc(quantidade))
   
-  cat("\n=====================================================\n")
-  cat("Distribuição de Idade —", titulo_status, "\n")
-  cat("=====================================================\n")
   print(distribuicao)
   
-  # Estatísticas
-  cat("\nESTATÍSTICAS DESCRITIVAS —", titulo_status, "\n")
-  cat("Total:", nrow(df), "\n")
-  cat("Mínimo:", min(df$idade_aproximada_no_ingresso, na.rm = TRUE), "\n")
-  cat("Máximo:", max(df$idade_aproximada_no_ingresso, na.rm = TRUE), "\n")
-  cat("Média:", round(mean(df$idade_aproximada_no_ingresso, na.rm = TRUE), 2), "\n")
-  cat("Mediana:", median(df$idade_aproximada_no_ingresso, na.rm = TRUE), "\n")
-  
-  pico <- distribuicao %>% filter(quantidade == max(quantidade)) %>% pull(idade)
-  cat("Idade mais frequente:", pico, "\n")
-  
-  # Gráfico
-  grafico <- ggplot(distribuicao, aes(x = factor(idade), y = quantidade)) +
-    geom_bar(stat = "identity", fill = "#2E86AB", alpha = 0.8) +
-    geom_text(aes(label = quantidade), vjust = -0.4, size = 3.5) +
+  # gráfico vertical
+  g <- ggplot(distribuicao, aes(x = reorder(tipo_de_evasao, quantidade), 
+                                y = quantidade)) +
+    geom_bar(stat = "identity", fill = "#2E86AB", alpha = 0.9) +
+    
+    # Percentual dentro das barras
+    geom_text(aes(label = paste0(percentual, "%")),
+              vjust = 1.5, color = "white", size = 4) +
+    
     labs(
-      title = paste("Distribuição de Idade —", titulo_status),
-      x = "Idade no Ingresso",
+      title = "Distribuição dos Inativos por Tipo de Evasão",
+      x = "Tipo de Evasão",
       y = "Quantidade"
     ) +
     theme_minimal(base_size = 13) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    theme(
+      text = element_text(face = "plain"),       # tira negrito
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
   
-  print(grafico)
+  print(g)
   
   ggsave(
-    filename = paste0("idade_", gsub(" ", "_", tolower(titulo_status)), ".png"),
-    plot = grafico,
+    filename = "distribuicao_tipo_evasao_inativos.png",
+    plot = g,
     width = 12, height = 7, dpi = 300
   )
   
@@ -110,31 +83,15 @@ analise_idade <- function(df, titulo_status) {
 }
 
 # =====================================================
-# 5. Egressos
+# 4. Filtrar INATIVOS não graduados
 # =====================================================
 
-egressos <- alunos_final %>%
-  filter(status == "INATIVO", tipo_de_evasao == "GRADUADO") %>%
-  select(cpf, matricula, idade_aproximada_no_ingresso)
-
-dist_egressos <- analise_idade(egressos, "Egressos (Graduados)")
+inativos_nao_graduados <- alunos_final %>%
+  filter(status == "INATIVO", tipo_de_evasao != "GRADUADO")
 
 # =====================================================
-# 6. Evadidos
+# 5. Gerar tabela e gráfico
 # =====================================================
 
-evadidos <- alunos_final %>%
-  filter(status == "INATIVO", tipo_de_evasao != "GRADUADO") %>%
-  select(cpf, matricula, idade_aproximada_no_ingresso)
-
-dist_evadidos <- analise_idade(evadidos, "Evadidos")
-
-# =====================================================
-# 7. Ingressantes (todos da base)
-# =====================================================
-
-ingressantes <- alunos_final %>%
-  select(cpf, matricula, idade_aproximada_no_ingresso)
-
-dist_ingressantes <- analise_idade(ingressantes, "Todos os Ingressantes")
+dist_tipo_evasao <- analise_tipo_evasao(inativos_nao_graduados)
 
