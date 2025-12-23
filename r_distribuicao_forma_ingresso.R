@@ -78,131 +78,198 @@ ingresso_resumo <- dados_ingresso %>%
     percentual = round((total / sum(total)) * 100, 2)
   )
 
-
-# Gráfico de barras (percentual)
-ggplot(ingresso_resumo,
-       aes(x = forma_de_ingresso, y = percentual, fill = forma_de_ingresso)) +
-  geom_col() +
-  facet_wrap(~ curriculo, scales = "free_x") +
+###
+g_ingresso_facet <- ggplot(ingresso_resumo,
+                           aes(x = forma_de_ingresso,
+                               y = percentual,
+                               fill = forma_de_ingresso)) +
+  geom_col(width = 0.7) +
+  facet_wrap(~ curriculo) +
+  
+  geom_text(
+    aes(label = paste0(percentual, "%")),
+    vjust = -0.4,
+    size = 3.5
+  ) +
+  
   labs(
-    title = "Distribuição dos Alunos por Forma de Ingresso",
-    subtitle = "Comparação entre os Currículos 1999 e 2017",
+    title = "Distribuição Percentual dos Alunos por Forma de Ingresso",
+    subtitle = "Os Currículos 1999 e 2017",
     x = "Forma de Ingresso",
     y = "Percentual (%)"
   ) +
-  geom_text(
-    aes(label = paste0(percentual, "%")),
-    vjust = -0.3,
-    size = 3
-  ) +
-  theme_minimal() +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(angle = 30, hjust = 1)
-  )
-ggplot(ingresso_resumo,
-       aes(x = forma_de_ingresso, y = percentual, fill = forma_de_ingresso)) +
-  geom_col() +
-  facet_wrap(~ curriculo, scales = "free_x") +
-  labs(
-    title = "Distribuição dos Alunos por Forma de Ingresso",
-    subtitle = "Comparação entre os Currículos 1999 e 2017",
-    x = "Forma de Ingresso",
-    y = "Percentual (%)"
-  ) +
-  geom_text(
-    aes(label = paste0(percentual, "%")),
-    vjust = -0.3,
-    size = 3
-  ) +
-  theme_minimal() +
+  
+  theme_minimal(base_size = 13) +
   theme(
     legend.position = "none",
     axis.text.x = element_text(angle = 30, hjust = 1)
   )
 
+print(g_ingresso_facet)
 
 
-
-
-
-
-
-
-
-
-
-
-converter_periodo <- function(x) {
-  ano <- as.numeric(substr(x, 1, 4))
-  sem <- as.numeric(substr(x, 6, 6))
-  return(ano + (sem - 1) / 2)
-}
-
-evadidos <- evadidos %>%
-  mutate(
-    ingresso_num = converter_periodo(periodo_de_ingresso),
-    deslig_num   = converter_periodo(periodo_de_evasao),
-    tempo_ate_evasao = deslig_num - ingresso_num
-  )
-
-# =====================================================
-# Tempo médio até evasão por currículo
-# =====================================================
-tme_curriculos <- evadidos %>%
-  group_by(curriculo) %>%
-  summarise(
-    tempo_medio = round(mean(tempo_ate_evasao), 2),
-    total_evadidos = n(),
-    .groups = "drop"
-  ) %>%
-  mutate(curriculo = factor(curriculo,
-                            levels = c("1999", "2017"),
-                            labels = c("Currículo 1999", "Currículo 2017")))
-
-# =====================================================
-# Gráfico com cores claras e rótulos ajustados
-# =====================================================
-
-cores_tme <- c(
-  "Currículo 1999" =  "#3A8BB7",   # azul claro
-  "Currículo 2017" =  "#D98C4D"    # laranja claro
-)
-g_tme <- ggplot(tme_curriculos,
-                aes(x = curriculo,
-                    y = tempo_medio,
-                    fill = curriculo)) +
-  geom_col(width = 0.6, alpha = 0.95) +
+###
+g_ingresso_facet <- ggplot(ingresso_resumo,
+                           aes(x = forma_de_ingresso,
+                               y = percentual,
+                               fill = forma_de_ingresso)) +
+  geom_col(width = 0.7) +
+  facet_wrap(~ curriculo) +
   
-  # texto sem negrito acima da barra + palavra períodos
-  geom_text(aes(label = paste0(tempo_medio, " períodos")),
-            vjust = -0.4,
-            size = 4) +
-  
-  scale_fill_manual(values = cores_tme) +
+  geom_text(
+    aes(label = paste0(percentual, "%")),
+    vjust = -0.4,
+    size = 3.5
+  ) +
   
   labs(
-    title = "Tempo Médio até Evasão por Currículo",
-    x = "Currículo",
-    y = "Tempo Médio (em períodos)",
+    title = "Distribuição Percentual dos Alunos por Forma de Ingresso",
+    subtitle = "Os Currículos 1999 e 2017",
+    x = "Forma de Ingresso",
+    y = "Percentual (%)"
+  ) +
+  
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+
+print(g_ingresso_facet)
+
+
+###
+g_ingresso_facet <- ggplot(ingresso_resumo,
+                           aes(x = forma_de_ingresso,
+                               y = percentual,
+                               fill = forma_de_ingresso)) +
+  geom_col(width = 0.7) +
+  facet_wrap(~ curriculo) +
+  
+  geom_text(
+    aes(label = paste0(percentual, "%")),
+    vjust = -0.4,
+    size = 3.5
+  ) +
+  
+  labs(
+    title = "Distribuição Percentual dos Alunos por Forma de Ingresso",
+    subtitle = "Os Currículos 1999 e 2017",
+    x = "Forma de Ingresso",
+    y = "Percentual (%)"
+  ) +
+  
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+
+print(g_ingresso_facet)
+
+
+###
+g_ingresso_lado <- ggplot(ingresso_resumo,
+                          aes(x = forma_de_ingresso,
+                              y = percentual,
+                              fill = curriculo)) +
+  geom_col(position = position_dodge(width = 0.7),
+           width = 0.6) +
+  
+  geom_text(
+    aes(label = paste0(percentual, "%")),
+    position = position_dodge(width = 0.7),
+    vjust = -0.4,
+    size = 3
+  ) +
+  
+  labs(
+    title = "Comparação das Formas de Ingresso por Currículo",
+    x = "Forma de Ingresso",
+    y = "Percentual (%)",
     fill = "Currículo"
   ) +
   
   theme_minimal(base_size = 13) +
   theme(
-    legend.title = element_text(face = "plain"),
-    legend.text  = element_text(face = "plain"),
-    text = element_text(face = "plain")
+    axis.text.x = element_text(angle = 30, hjust = 1)
   )
 
-print(g_tme)
+print(g_ingresso_lado)
 
-ggsave("tempo_medio_evasao_curriculos.png",
-       g_tme, width = 10, height = 6, dpi = 300)
 
-# =====================================================
-# Exportar tabela
-# =====================================================
-write.csv(tme_curriculos,
-          "tme_comparativo_curriculos.csv",
-          row.names = FALSE)
+### Gráfico horizontal – Percentual
+g_ingresso_lado_horizontal <- ggplot(ingresso_resumo,
+                                     aes(x = forma_de_ingresso,
+                                         y = percentual,
+                                         fill = curriculo)) +
+  geom_col(position = position_dodge(width = 0.7),
+           width = 0.6) +
+  
+  geom_text(
+    aes(label = paste0(percentual, "%")),
+    position = position_dodge(width = 0.7),
+    hjust = -0.15,
+    size = 3
+  ) +
+  
+  coord_flip() +
+  
+  labs(
+    title = "Distribuição Percentual das Formas de Ingresso",
+    x = "Forma de Ingresso",
+    y = "Percentual (%)",
+    fill = "Currículo"
+  ) +
+  
+  theme_minimal(base_size = 13)
+
+print(g_ingresso_lado_horizontal)
+
+
+###
+ingresso_total <- dados_ingresso %>%
+  group_by(curriculo, forma_de_ingresso) %>%
+  summarise(total = n(), .groups = "drop")
+
+g_ingresso_total_horizontal <- ggplot(ingresso_total,
+                                      aes(x = forma_de_ingresso,
+                                          y = total,
+                                          fill = curriculo)) +
+  geom_col(position = position_dodge(width = 0.7),
+           width = 0.6) +
+  
+  geom_text(
+    aes(label = total),
+    position = position_dodge(width = 0.7),
+    hjust = -0.15,
+    size = 3
+  ) +
+  
+  coord_flip() +
+  
+  labs(
+    title = "Número de Alunos por Forma de Ingresso e Currículo",
+    x = "Forma de Ingresso",
+    y = "Número de Alunos",
+    fill = "Currículo"
+  ) +
+  
+  theme_minimal(base_size = 13)
+
+print(g_ingresso_total_horizontal)
+
+### Tabela 
+tabela_ingresso <- dados_ingresso %>%
+  group_by(curriculo, forma_de_ingresso) %>%
+  summarise(total = n(), .groups = "drop") %>%
+  pivot_wider(
+    names_from  = curriculo,
+    values_from = total,
+    values_fill = 0
+  ) %>%
+  arrange(desc(`Currículo 1999` + `Currículo 2017`))
+
+tabela_ingresso
+
+
