@@ -52,6 +52,22 @@ dados_ingresso <- alunos_final %>%
     forma_de_ingresso = str_to_title(forma_de_ingresso)
   )
 
+# Remover o currículo 2023
+dados_ingresso <- alunos_final %>%
+  filter(
+    !is.na(forma_de_ingresso),
+    !is.na(curriculo),
+    curriculo %in% c("1999", "2017")  # remove 2023
+  ) %>%
+  mutate(
+    curriculo = factor(curriculo,
+                       levels = c("1999", "2017"),
+                       labels = c("Currículo 1999", "Currículo 2017")),
+    forma_de_ingresso = str_to_title(forma_de_ingresso)
+  )
+
+
+
 # Cálculo de totais e percentuais por currículo
 
 ingresso_resumo <- dados_ingresso %>%
@@ -62,6 +78,48 @@ ingresso_resumo <- dados_ingresso %>%
     percentual = round((total / sum(total)) * 100, 2)
   )
 
+
+# Gráfico de barras (percentual)
+ggplot(ingresso_resumo,
+       aes(x = forma_de_ingresso, y = percentual, fill = forma_de_ingresso)) +
+  geom_col() +
+  facet_wrap(~ curriculo, scales = "free_x") +
+  labs(
+    title = "Distribuição dos Alunos por Forma de Ingresso",
+    subtitle = "Comparação entre os Currículos 1999 e 2017",
+    x = "Forma de Ingresso",
+    y = "Percentual (%)"
+  ) +
+  geom_text(
+    aes(label = paste0(percentual, "%")),
+    vjust = -0.3,
+    size = 3
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+ggplot(ingresso_resumo,
+       aes(x = forma_de_ingresso, y = percentual, fill = forma_de_ingresso)) +
+  geom_col() +
+  facet_wrap(~ curriculo, scales = "free_x") +
+  labs(
+    title = "Distribuição dos Alunos por Forma de Ingresso",
+    subtitle = "Comparação entre os Currículos 1999 e 2017",
+    x = "Forma de Ingresso",
+    y = "Percentual (%)"
+  ) +
+  geom_text(
+    aes(label = paste0(percentual, "%")),
+    vjust = -0.3,
+    size = 3
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
 
 
 
