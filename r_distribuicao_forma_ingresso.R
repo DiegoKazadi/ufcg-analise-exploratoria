@@ -228,6 +228,66 @@ print(g_sexo)
 
 
 
+# 
+# Padronização do estado civil
+
+dados_filtrados <- dados_filtrados %>%
+  mutate(
+    estado_civil = str_to_upper(str_trim(estado_civil)),
+    estado_civil = case_when(
+      str_detect(estado_civil, "SOLTEIR") ~ "SOLTEIRO(A)",
+      str_detect(estado_civil, "CASAD") ~ "CASADO(A)",
+      str_detect(estado_civil, "DIVOR") ~ "DIVORCIADO(A)",
+      str_detect(estado_civil, "VIUV") ~ "VIÚVO(A)",
+      TRUE ~ "OUTROS"
+    )
+  )
+
+# Conferência das categorias
+table(dados_filtrados$estado_civil)
+
+# Resumo absoluto e percentual por currículo
+
+estado_civil_resumo <- dados_filtrados %>%
+  group_by(curriculo, estado_civil) %>%
+  summarise(total = n(), .groups = "drop") %>%
+  group_by(curriculo) %>%
+  mutate(
+    percentual = round((total / sum(total)) * 100, 2)
+  )
+
+estado_civil_resumo
+
+# Gráfico: Distribuição percentual por estado civil
+
+g_estado_civil <- ggplot(
+  estado_civil_resumo,
+  aes(
+    x = estado_civil,
+    y = percentual,
+    fill = estado_civil
+  )
+) +
+  geom_col(width = 0.7) +
+  facet_wrap(~ curriculo) +
+  geom_text(
+    aes(label = paste0(percentual, "%")),
+    vjust = -0.4,
+    size = 3.5
+  ) +
+  labs(
+    title = "Distribuição dos Estudantes por Estado Civil",
+    subtitle = "Análise exploratória – Currículos 1999 e 2017",
+    x = "Estado civil",
+    y = "Percentual (%)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+
+print(g_estado_civil)
 
 
 
