@@ -291,17 +291,61 @@ print(g_estado_civil)
 
 
 
+# Considera-se que 'dados_filtrados' já foi criado nas etapas anteriores
 
+# Padronização do status
+dados_status <- dados_filtrados %>%
+  mutate(
+    status = str_to_upper(str_trim(status)),
+    periodo_de_ingresso = as.numeric(as.character(periodo_de_ingresso))
+  )
 
+# Criar sequência completa de períodos (incluindo períodos sem alunos ativos)
+periodos_completos <- tibble(
+  periodo_de_ingresso = seq(2011.1, 2023.2, by = 0.1)
+)
 
+# Filtrar apenas alunos ativos
+ativos_por_periodo <- dados_status %>%
+  filter(status == "ATIVO") %>%
+  count(curriculo, periodo_de_ingresso, name = "total_ativos")
 
+# Garantir inclusão de períodos com zero alunos ativos
+ativos_completos <- periodos_completos %>%
+  crossing(curriculo = unique(dados_status$curriculo)) %>%
+  left_join(
+    ativos_por_periodo,
+    by = c("curriculo", "periodo_de_ingresso")
+  ) %>%
+  mutate(total_ativos = replace_na(total_ativos, 0))
 
+# Conferência
+head(ativos_completos)
 
+# Gráfico: alunos ativos por período
+g_ativos_periodo <- ggplot(
+  ativos_completos,
+  aes(
+    x = factor(periodo_de_ingresso),
+    y = total_ativos,
+    group = curriculo,
+    color = curriculo
+  )
+) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  facet_wrap(~ curriculo, scales = "free_x") +
+  labs(
+    title = "Distribuição dos Alunos Ativos por Período de Ingresso",
+    subtitle = "Análise exploratória - (2011.1–2023.2)",
+    x = "Período de ingresso",
+    y = "Número de estudantes ativos",
+    color = "Currículo"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
 
-
-
-
-
-
-
-
+print(g_ativos_periodo)
