@@ -349,3 +349,66 @@ g_ativos_periodo <- ggplot(
   )
 
 print(g_ativos_periodo)
+
+
+
+# 
+dados_status <- dados_filtrados %>%
+  mutate(
+    status = str_to_upper(str_trim(status)),
+    periodo = as.numeric(as.character(periodo_de_ingresso))
+  )
+
+# Contagem de alunos ativos
+ativos_por_periodo <- dados_status %>%
+  filter(status == "ATIVO") %>%
+  count(curriculo, periodo, name = "total_ativos")
+
+# Criar sequência completa de períodos existentes
+periodos_completos <- expand.grid(
+  periodo = sort(unique(dados_status$periodo)),
+  curriculo = unique(dados_status$curriculo)
+)
+
+ativos_completos <- periodos_completos %>%
+  left_join(ativos_por_periodo, by = c("curriculo", "periodo")) %>%
+  mutate(total_ativos = replace_na(total_ativos, 0))
+
+
+# 
+g_ativos_periodo <- ggplot(
+  ativos_completos,
+  aes(
+    x = factor(periodo),
+    y = total_ativos
+  )
+) +
+  geom_col(fill = "#1f77b4", width = 0.7) +
+  
+  facet_wrap(~ curriculo, ncol = 1, scales = "free_x") +
+  
+  labs(
+    title = "Distribuição dos Alunos Ativos por Período de Ingresso",
+    subtitle = "Análise exploratória - (2011.1–2023.2)",
+    x = "Período de ingresso",
+    y = "Número de estudantes ativos"
+  ) +
+  
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(
+      angle = 90,   # eixo X deitado
+      vjust = 0.5,
+      hjust = 1,
+      size = 9
+    ),
+    panel.grid.major.x = element_blank(),
+    strip.text = element_text(face = "bold", size = 12)
+  ) +
+  
+  # Mostrar rótulos do eixo X a cada 3 períodos
+  scale_x_discrete(
+    breaks = function(x) x[seq(1, length(x), by = 3)]
+  )
+
+print(g_ativos_periodo)
