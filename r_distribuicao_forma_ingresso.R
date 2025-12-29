@@ -73,6 +73,17 @@ dados_filtrados <- dados_filtrados %>%
 table(dados_filtrados$forma_de_ingresso)
 
 
+# Distribuição absoluta e percentual
+
+ingresso_resumo <- dados_filtrados %>%
+  group_by(curriculo, forma_de_ingresso) %>%
+  summarise(total = n(), .groups = "drop") %>%
+  group_by(curriculo) %>%
+  mutate(
+    percentual = round((total / sum(total)) * 100, 2)
+  )
+
+ingresso_resumo
 
 
 
