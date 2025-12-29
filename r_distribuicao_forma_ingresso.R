@@ -174,8 +174,57 @@ print(g_ingresso_periodo)
 
 # Distribuição por sexo
  
+# Filtrar e padronizar a variável sexo
+dados_sexo <- dados_filtrados %>%
+  filter(!is.na(sexo)) %>%
+  mutate(
+    sexo = str_to_upper(str_trim(sexo)),
+    sexo = case_when(
+      sexo %in% c("M", "MASCULINO") ~ "Masculino",
+      sexo %in% c("F", "FEMININO") ~ "Feminino",
+      TRUE ~ "Não informado"
+    )
+  )
 
+sexo_resumo <- dados_sexo %>%
+  group_by(curriculo, sexo) %>%
+  summarise(total = n(), .groups = "drop") %>%
+  group_by(curriculo) %>%
+  mutate(
+    percentual = round((total / sum(total)) * 100, 2)
+  )
 
+sexo_resumo
+
+# Gráfico
+g_sexo <- ggplot(
+  sexo_resumo,
+  aes(
+    x = sexo,
+    y = total,
+    fill = sexo
+  )
+) +
+  geom_col(width = 0.6) +
+  facet_wrap(~ curriculo) +
+  geom_text(
+    aes(label = paste0(total, " (", percentual, "%)")),
+    vjust = -0.4,
+    size = 3.5
+  ) +
+  labs(
+    title = "Distribuição dos Estudantes por Sexo",
+    subtitle = "Análise exploratória – Currículos 1999 e 2017",
+    x = "Sexo",
+    y = "Número de estudantes"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(size = 11)
+  )
+
+print(g_sexo)
 
 
 
