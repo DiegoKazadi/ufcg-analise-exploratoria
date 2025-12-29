@@ -54,7 +54,23 @@ dados_filtrados <- alunos_final %>%
 nrow(dados_filtrados)
 
 
+# Padronização das formas de ingresso
 
+dados_filtrados <- dados_filtrados %>%
+  mutate(
+    forma_de_ingresso = case_when(
+      str_detect(forma_de_ingresso, "SISU") ~ "SISU",
+      str_detect(forma_de_ingresso, "VESTIBULAR|ENEM") ~ "VESTIBULAR/ENEM",
+      str_detect(forma_de_ingresso, "TRANSFER") ~ "TRANSFERÊNCIA",
+      str_detect(forma_de_ingresso, "REOP") ~ "REOPÇÃO",
+      str_detect(forma_de_ingresso, "CONVENIO|PEC") ~ "CONVÊNIO",
+      str_detect(forma_de_ingresso, "GRADUAD") ~ "GRADUADO",
+      TRUE ~ "OUTROS"
+    )
+  )
+
+# Conferir categorias finais
+table(dados_filtrados$forma_de_ingresso)
 
 
 
