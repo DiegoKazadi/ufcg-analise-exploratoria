@@ -86,224 +86,113 @@ ingresso_resumo <- dados_filtrados %>%
 ingresso_resumo
 
 
+# Gráfico: Barras empilhadas por período e tipo de ingresso
 
-
-
-
-
-
-
-
-
-
-
-# Preparação dos dados
-
-# Garantir padronização dos rótulos
-dados_ingresso <- alunos_final %>%
-  filter(!is.na(forma_de_ingresso), !is.na(curriculo)) %>%
-  mutate(
-    curriculo = as.factor(curriculo),
-    forma_de_ingresso = str_to_title(forma_de_ingresso)
+g_ingresso_periodo <- ggplot(
+  dados_filtrados,
+  aes(
+    x = periodo_de_ingresso,
+    fill = forma_de_ingresso
+  )
+) +
+  geom_bar(position = "stack") +
+  facet_wrap(~ curriculo, scales = "free_x") +
+  labs(
+    title = "Distribuição dos Alunos por Período e Tipo de Ingresso",
+    subtitle = "Análise exploratória – Currículos 1999 e 2017",
+    x = "Período de ingresso",
+    y = "Número de estudantes",
+    fill = "Tipo de ingresso"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right"
   )
 
+print(g_ingresso_periodo)
 
-# Garantir padronização dos rótulos
-dados_ingresso <- alunos_final %>%
-  filter(!is.na(forma_de_ingresso), !is.na(curriculo)) %>%
-  mutate(
-    curriculo = as.factor(curriculo),
-    forma_de_ingresso = str_to_title(forma_de_ingresso)
+
+# Gráfico percentual por currículo
+
+g_ingresso_percentual <- ggplot(
+  ingresso_resumo,
+  aes(
+    x = forma_de_ingresso,
+    y = percentual,
+    fill = forma_de_ingresso
   )
-
-# Remover o currículo 2023
-dados_ingresso <- alunos_final %>%
-  filter(
-    !is.na(forma_de_ingresso),
-    !is.na(curriculo),
-    curriculo %in% c("1999", "2017")  # remove 2023
-  ) %>%
-  mutate(
-    curriculo = factor(curriculo,
-                       levels = c("1999", "2017"),
-                       labels = c("Currículo 1999", "Currículo 2017")),
-    forma_de_ingresso = str_to_title(forma_de_ingresso)
-  )
-
-
-
-# Cálculo de totais e percentuais por currículo
-
-ingresso_resumo <- dados_ingresso %>%
-  group_by(curriculo, forma_de_ingresso) %>%
-  summarise(total = n(), .groups = "drop") %>%
-  group_by(curriculo) %>%
-  mutate(
-    percentual = round((total / sum(total)) * 100, 2)
-  )
-
-###
-g_ingresso_facet <- ggplot(ingresso_resumo,
-                           aes(x = forma_de_ingresso,
-                               y = percentual,
-                               fill = forma_de_ingresso)) +
+) +
   geom_col(width = 0.7) +
   facet_wrap(~ curriculo) +
-  
   geom_text(
     aes(label = paste0(percentual, "%")),
     vjust = -0.4,
     size = 3.5
   ) +
-  
   labs(
-    title = "Distribuição Percentual dos Alunos por Forma de Ingresso",
-    subtitle = "Os Currículos 1999 e 2017",
-    x = "Forma de Ingresso",
+    title = "Distribuição Percentual por Forma de Ingresso",
+    subtitle = "Análise exploratória da base filtrada (2011.1–2023.2)",
+    x = "Forma de ingresso",
     y = "Percentual (%)"
   ) +
-  
   theme_minimal(base_size = 13) +
   theme(
     legend.position = "none",
     axis.text.x = element_text(angle = 30, hjust = 1)
   )
 
-print(g_ingresso_facet)
+print(g_ingresso_percentual)
 
 
-###
-g_ingresso_facet <- ggplot(ingresso_resumo,
-                           aes(x = forma_de_ingresso,
-                               y = percentual,
-                               fill = forma_de_ingresso)) +
-  geom_col(width = 0.7) +
-  facet_wrap(~ curriculo) +
-  
-  geom_text(
-    aes(label = paste0(percentual, "%")),
-    vjust = -0.4,
-    size = 3.5
-  ) +
-  
+# Distribuição por periodo de ingresso
+g_ingresso_periodo <- ggplot(
+  dados_filtrados,
+  aes(
+    x = periodo_de_ingresso,
+    fill = forma_de_ingresso
+  )
+) +
+  geom_bar(position = "stack") +
+  facet_wrap(~ curriculo, scales = "free_x", ncol = 1) +
   labs(
-    title = "Distribuição Percentual dos Alunos por Forma de Ingresso",
-    subtitle = "Os Currículos 1999 e 2017",
-    x = "Forma de Ingresso",
-    y = "Percentual (%)"
+    title = "Distribuição por Período de Ingresso",
+    subtitle = "Análise exploratória – Currículos 1999 e 2017 (2011.1–2023.2)",
+    x = "Período de ingresso",
+    y = "Número de estudantes",
+    fill = "Forma de ingresso"
   ) +
-  
   theme_minimal(base_size = 13) +
   theme(
-    legend.position = "none",
-    axis.text.x = element_text(angle = 30, hjust = 1)
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "right",
+    strip.text = element_text(size = 12, face = "bold")
   )
 
-print(g_ingresso_facet)
+print(g_ingresso_periodo)
 
 
-###
-g_ingresso_facet <- ggplot(ingresso_resumo,
-                           aes(x = forma_de_ingresso,
-                               y = percentual,
-                               fill = forma_de_ingresso)) +
-  geom_col(width = 0.7) +
-  facet_wrap(~ curriculo) +
-  
-  geom_text(
-    aes(label = paste0(percentual, "%")),
-    vjust = -0.4,
-    size = 3.5
-  ) +
-  
-  labs(
-    title = "Distribuição Percentual dos Alunos por Forma de Ingresso",
-    subtitle = "Os Currículos 1999 e 2017",
-    x = "Forma de Ingresso",
-    y = "Percentual (%)"
-  ) +
-  
-  theme_minimal(base_size = 13) +
-  theme(
-    legend.position = "none",
-    axis.text.x = element_text(angle = 30, hjust = 1)
-  )
-
-print(g_ingresso_facet)
+# Distribuição por sexo
+ 
 
 
-### Gráfico horizontal – Percentual
-g_ingresso_lado_horizontal <- ggplot(ingresso_resumo,
-                                     aes(x = forma_de_ingresso,
-                                         y = percentual,
-                                         fill = curriculo)) +
-  geom_col(position = position_dodge(width = 0.7),
-           width = 0.6) +
-  
-  geom_text(
-    aes(label = paste0(percentual, "%")),
-    position = position_dodge(width = 0.7),
-    hjust = -0.15,
-    size = 3
-  ) +
-  
-  coord_flip() +
-  
-  labs(
-    title = "Distribuição Percentual das Formas de Ingresso",
-    x = "Forma de Ingresso",
-    y = "Percentual (%)",
-    fill = "Currículo"
-  ) +
-  
-  theme_minimal(base_size = 13)
-
-print(g_ingresso_lado_horizontal)
 
 
-###
-ingresso_total <- dados_ingresso %>%
-  group_by(curriculo, forma_de_ingresso) %>%
-  summarise(total = n(), .groups = "drop")
 
-g_ingresso_total_horizontal <- ggplot(ingresso_total,
-                                      aes(x = forma_de_ingresso,
-                                          y = total,
-                                          fill = curriculo)) +
-  geom_col(position = position_dodge(width = 0.7),
-           width = 0.6) +
-  
-  geom_text(
-    aes(label = total),
-    position = position_dodge(width = 0.7),
-    hjust = -0.15,
-    size = 3
-  ) +
-  
-  coord_flip() +
-  
-  labs(
-    title = "Número de Alunos por Forma de Ingresso e Currículo",
-    x = "Forma de Ingresso",
-    y = "Número de Alunos",
-    fill = "Currículo"
-  ) +
-  
-  theme_minimal(base_size = 13)
 
-print(g_ingresso_total_horizontal)
 
-### Tabela 
-tabela_ingresso <- dados_ingresso %>%
-  group_by(curriculo, forma_de_ingresso) %>%
-  summarise(total = n(), .groups = "drop") %>%
-  pivot_wider(
-    names_from  = curriculo,
-    values_from = total,
-    values_fill = 0
-  ) %>%
-  arrange(desc(`Currículo 1999` + `Currículo 2017`))
 
-tabela_ingresso
+
+
+
+
+
+
+
+
+
+
+
+
 
 
