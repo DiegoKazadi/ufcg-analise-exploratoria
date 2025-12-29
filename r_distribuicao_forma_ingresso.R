@@ -33,6 +33,43 @@ colnames(alunos_final)
 glimpse(alunos_final)
 
 
+# Filtragem temporal da amostra
+
+dados_filtrados <- alunos_final %>%
+  filter(
+    periodo_de_ingresso >= 2011.1,
+    periodo_de_ingresso <= 2023.2,
+    curriculo %in% c(1999, 2017),
+    !is.na(forma_de_ingresso)
+  ) %>%
+  mutate(
+    curriculo = factor(curriculo,
+                       levels = c(1999, 2017),
+                       labels = c("Currículo 1999", "Currículo 2017")),
+    periodo_de_ingresso = as.factor(periodo_de_ingresso),
+    forma_de_ingresso = str_to_upper(str_trim(forma_de_ingresso))
+  )
+
+# Conferência do tamanho final da base
+nrow(dados_filtrados)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Preparação dos dados
 
 # Garantir padronização dos rótulos
@@ -166,36 +203,6 @@ g_ingresso_facet <- ggplot(ingresso_resumo,
   )
 
 print(g_ingresso_facet)
-
-
-###
-g_ingresso_lado <- ggplot(ingresso_resumo,
-                          aes(x = forma_de_ingresso,
-                              y = percentual,
-                              fill = curriculo)) +
-  geom_col(position = position_dodge(width = 0.7),
-           width = 0.6) +
-  
-  geom_text(
-    aes(label = paste0(percentual, "%")),
-    position = position_dodge(width = 0.7),
-    vjust = -0.4,
-    size = 3
-  ) +
-  
-  labs(
-    title = "Comparação das Formas de Ingresso por Currículo",
-    x = "Forma de Ingresso",
-    y = "Percentual (%)",
-    fill = "Currículo"
-  ) +
-  
-  theme_minimal(base_size = 13) +
-  theme(
-    axis.text.x = element_text(angle = 30, hjust = 1)
-  )
-
-print(g_ingresso_lado)
 
 
 ### Gráfico horizontal – Percentual
