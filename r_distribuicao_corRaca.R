@@ -2,6 +2,7 @@
 library(tidyverse)
 library(janitor)
 library(readr)
+library(ggplot2)
 
 # Carregar tabelas
 
@@ -53,61 +54,55 @@ dados_filtrados <- alunos_final %>%
 # Conferência do tamanho final da base
 nrow(dados_filtrados)
 
+# Tratamento da variável Cor/Raça
 
-# Padronização das formas de ingresso
-
-dados_filtrados <- dados_filtrados %>%
+dados_cor <- dados_filtrados %>%
   mutate(
-    forma_de_ingresso = case_when(
-      str_detect(forma_de_ingresso, "SISU") ~ "SISU",
-      str_detect(forma_de_ingresso, "VESTIBULAR|ENEM") ~ "VESTIBULAR/ENEM",
-      str_detect(forma_de_ingresso, "TRANSFER") ~ "TRANSFERÊNCIA",
-      str_detect(forma_de_ingresso, "REOP") ~ "REOPÇÃO",
-      str_detect(forma_de_ingresso, "CONVENIO|PEC") ~ "CONVÊNIO",
-      str_detect(forma_de_ingresso, "GRADUAD") ~ "GRADUADO",
-      TRUE ~ "OUTROS"
-    )
+    cor = str_to_upper(str_trim(cor)),
+    cor = if_else(is.na(cor) | cor == "", "NÃO DECLARADA", cor)
   )
 
-# Conferir categorias finais
-table(dados_filtrados$forma_de_ingresso)
+# Contagem e cálculo de porcentagens
 
-
-# Distribuição absoluta e percentual
-
-ingresso_resumo <- dados_filtrados %>%
-  group_by(curriculo, forma_de_ingresso) %>%
-  summarise(total = n(), .groups = "drop") %>%
+dados_cor_resumo <- dados_cor %>%
+  count(curriculo, cor) %>%
   group_by(curriculo) %>%
   mutate(
-    percentual = round((total / sum(total)) * 100, 2)
-  )
+    percentual = (n / sum(n)) * 100
+  ) %>%
+  ungroup()
 
-ingresso_resumo
+# Gráfico – Cor/Raça Declarada por Currículo
 
 
-# Gráfico: Barras empilhadas por período e tipo de ingresso
-
-g_ingresso_periodo <- ggplot(
-  dados_filtrados,
-  aes(
-    x = periodo_de_ingresso,
-    fill = forma_de_ingresso
-  )
-) +
-  geom_bar(position = "stack") +
-  facet_wrap(~ curriculo, scales = "free_x") +
-  labs(
-    title = "Distribuição dos Alunos por Período e Tipo de Ingresso",
-    subtitle = "Análise exploratória – Currículos 1999 e 2017",
-    x = "Período de ingresso",
-    y = "Número de estudantes",
-    fill = "Tipo de ingresso"
+grafico_cor <- ggplot(dados_cor_resumo,
+                      aes(x = cor, y = percentual, fill = curriculo)) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_text(
+    aes(label = paste0(n, " (", round(percentual, 1), "%)")),
+    position = position_dodge(width = 0.9),
+    vjust = -0.3,
+    size = 3.5
   ) +
-  theme_minimal(base_size = 13) +
+  labs(
+    title = "Distribuição dos Ingressantes por Cor/Raça Declarada",
+    subtitle = "Comparação entre os Currículos 1999 e 2017 (2011.1–2023.2)",
+    x = "Cor/Raça Declarada",
+    y = "Percentual (%)",
+    fill = "Currículo"
+  ) +
+  scale_fill_manual(
+    values = c("Currículo 1999" = "#1F4E79",
+               "Currículo 2017" = "#C55A11")
+  ) +
+  theme_minimal() +
   theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11),
     axis.text.x = element_text(angle = 45, hjust = 1),
-    legend.position = "right"
+    legend.position = "top"
   )
 
-print(g_ingresso_periodo)
+grafico_cor
+
+
