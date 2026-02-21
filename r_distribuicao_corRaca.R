@@ -57,52 +57,53 @@ nrow(dados_filtrados)
 # Tratamento da variável Cor/Raça
 
 dados_cor <- dados_filtrados %>%
+  filter(!is.na(cor), cor != "") %>%
   mutate(
-    cor = str_to_upper(str_trim(cor)),
-    cor = if_else(is.na(cor) | cor == "", "NÃO DECLARADA", cor)
+    cor = str_to_title(str_trim(cor))
   )
 
 # Contagem e cálculo de porcentagens
 
-dados_cor_resumo <- dados_cor %>%
-  count(curriculo, cor) %>%
+# Distribuição por cor/raça e currículo
+dist_cor <- dados_cor %>%
+  count(curriculo, cor, name = "n") %>%
   group_by(curriculo) %>%
   mutate(
-    percentual = (n / sum(n)) * 100
+    perc = round(100 * n / sum(n), 2),
+    label = paste0(n, " (", perc, "%)")
   ) %>%
   ungroup()
 
 # Gráfico – Cor/Raça Declarada por Currículo
+library(ggplot2)
 
-
-grafico_cor <- ggplot(dados_cor_resumo,
-                      aes(x = cor, y = percentual, fill = curriculo)) +
-  geom_col(position = position_dodge(width = 0.9)) +
+grafico_cor <- ggplot(
+  dist_cor,
+  aes(x = n, y = fct_reorder(cor, n), fill = curriculo)
+) +
+  geom_col(position = position_dodge(width = 0.8)) +
   geom_text(
-    aes(label = paste0(n, " (", round(percentual, 1), "%)")),
-    position = position_dodge(width = 0.9),
-    vjust = -0.3,
+    aes(label = label),
+    position = position_dodge(width = 0.8),
+    hjust = -0.1,
     size = 3.5
-  ) +
-  labs(
-    title = "Distribuição dos Ingressantes por Cor/Raça Declarada",
-    subtitle = "Comparação entre os Currículos 1999 e 2017 (2011.1–2023.2)",
-    x = "Cor/Raça Declarada",
-    y = "Percentual (%)",
-    fill = "Currículo"
   ) +
   scale_fill_manual(
     values = c("Currículo 1999" = "#1F4E79",
-               "Currículo 2017" = "#C55A11")
+               "Currículo 2017" = "#C65911")
   ) +
-  theme_minimal() +
+  labs(
+    title = "Distribuição dos Ingressantes por Cor/Raça Declarada",
+    x = "Número de estudantes",
+    y = "Cor/Raça declarada",
+    fill = "Currículo"
+  ) +
+  coord_cartesian(clip = "off") +
+  theme_minimal(base_size = 12) +
   theme(
-    plot.title = element_text(size = 14, face = "bold"),
-    plot.subtitle = element_text(size = 11),
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    legend.position = "top"
+    plot.title = element_text(face = "plain", hjust = 0.5),
+    legend.position = "top",
+    axis.text.y = element_text(size = 11)
   )
 
 grafico_cor
-
-
